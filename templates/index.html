@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles.css">
+    <title>Explorador de Arquivos</title>
+</head>
+
+<body>
+    <div class="container">
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <h1>Enviar Arquivos</h1>
+            <!-- Caminho atual para upload -->
+            <input type="hidden" name="current_path" id="current-path-input" value="/">
+
+            <!-- Campo para selecionar arquivos -->
+            <label for="files">Selecione arquivos:</label>
+            <input type="file" multiple name="files[]" id="files">
+            <br><br>
+
+            <label for="folder">Selecione uma pasta:</label>
+            <input type="file" name="folder[]" webkitdirectory multiple>
+            <br><br>
+
+            <!-- Botão para enviar -->
+            <button type="submit">Enviar</button>
+        </form>
+    </div>
+    <div class="container">
+
+        <div id="file-explorer" class="list">
+            <h1>Explorador de Arquivos</h1>
+            <p><strong>Caminho Atual:</strong> <span id="current-path">/</span></p>
+            <ul id="directory-list"></ul>
+        </div>
+    </div>
+    <b>created by Wellington A. Reis</b>
+    <script>
+        const explorer = document.getElementById('directory-list');
+        const currentPathSpan = document.getElementById('current-path');
+        const currentPathInput = document.getElementById('current-path-input');
+
+        // Função para carregar diretórios
+        async function loadDirectory(path = '/') {
+            const response = await fetch(`/explore?path=${encodeURIComponent(path)}`);
+            const data = await response.json();
+
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            // Atualiza o caminho atual
+            currentPathSpan.textContent = data.current_path;
+            currentPathInput.value = data.current_path;
+
+            // Renderiza os itens no explorador
+            explorer.innerHTML = '';
+            if (data.current_path !== '/') {
+                const backOption = document.createElement('li');
+                backOption.textContent = '.. (Voltar)';
+                backOption.onclick = () => loadDirectory(data.parent_path);
+                explorer.appendChild(backOption);
+            }
+
+            data.directories.forEach(dir => {
+                const item = document.createElement('li');
+                item.innerHTML = `
+                    <i class="bi bi-folder-fill"></i>
+                    <span>${dir}</span>`;
+                item.onclick = () => loadDirectory(`${data.current_path.replace(/\/$/, '')}/${dir}`);
+                explorer.appendChild(item);
+            });
+
+
+            data.files.forEach(file => {
+                const item = document.createElement('li');
+                item.innerHTML = `
+                <i class="bi bi-file-earmark-text"></i>
+                <span>${file}</span>
+                `;
+                explorer.appendChild(item);
+            });
+        }
+
+        // Carregar o diretório inicial
+        loadDirectory();
+    </script>
+</body>
+
+</html>
