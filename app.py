@@ -1,75 +1,123 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, jsonify, render_template, redirect, url_for, send_from_directory, send_file
+from pathlib import Path
+import logging
+import zipfile
+import io
 import os
 
 app = Flask(__name__)
-BASE_DIRECTORY = '/home/wellington'
+app.logger.setLevel(logging.DEBUG)
+
+BASE_DIRECTORY = Path.home()
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/explore', methods=['GET'])
+@app.route('/explore')
 def explore():
-    path = request.args.get('path', '/')
-    full_path = os.path.join(BASE_DIRECTORY, path.lstrip('/'))
+    rel = request.args.get('path', '').strip().lstrip('/')
+    if rel in ('', '.', '/'):
+        rel = ''
 
-    if not os.path.exists(full_path) or not os.path.isdir(full_path):
-        return jsonify({'error': 'Diretório inválido'}), 400
-
-    parent_path = os.path.dirname(path.rstrip('/'))
-    directories = []
-    files = []
+    full_path = (BASE_DIRECTORY / rel).resolve()
 
     try:
-        for item in os.listdir(full_path):
-            item_path = os.path.join(full_path, item)
-            if os.path.isdir(item_path):
-                directories.append(item)
-            elif os.path.isfile(item_path):
-                files.append(item)
-    except PermissionError:
-        return jsonify({'error': 'Permissão negada'}), 403
+        full_path.relative_to(BASE_DIRECTORY)
+    except ValueError:
+        return jsonify({'error': 'Diretório inválido'}), 400
+
+    if not full_path.exists() or not full_path.is_dir():
+        return jsonify({'error': 'Não é um diretório válido'}), 400
+
+    dirs = [p.name for p in full_path.iterdir() if p.is_dir()]
+    files = [p.name for p in full_path.iterdir() if p.is_file()]
+
+    rel_to_base = full_path.relative_to(BASE_DIRECTORY)
+    current = '' if rel_to_base == Path('.') else str(rel_to_base)
+
+    parent = ''
+    if current:
+        parent = str(Path(current).parent) 
 
     return jsonify({
-        'current_path': path,
-        'parent_path': parent_path if path != '/' else None,
-        'directories': directories,
+        'current_path': current,
+        'parent_path': parent,
+        'directories': dirs,
         'files': files
     })
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    current_path = request.form.get('current_path', '/')
-    destination = os.path.join(BASE_DIRECTORY, current_path.lstrip('/'))  # Agora o caminho completo vem do input invisível
+    rel = request.form.get('current_path', '').lstrip('/')
+    dest = (BASE_DIRECTORY / rel).resolve()
 
-    if not destination:
-        return {'error': 'Nenhum destino selecionado'}, 400
+    app.logger.debug(f"[upload] rel={rel!r}, dest={dest}")
 
-    # Cria o diretório completo no servidor
-    destination_path = os.path.join(BASE_DIRECTORY, destination)
-    os.makedirs(destination_path, exist_ok=True)
+    try:
+        dest.relative_to(BASE_DIRECTORY)
+    except ValueError:
+        return jsonify({'error': 'Destino inválido'}), 400
 
-    # Processar arquivos enviados individualmente
-    if 'files[]' in request.files:
-        files = request.files.getlist('files[]')
-        for file in files:
-            if file.filename:
-                file_path = os.path.join(destination_path, file.filename)
-                file.save(file_path)
+    dest.mkdir(parents=True, exist_ok=True)
 
-    # Processar arquivos dentro de pastas
-    if 'folder[]' in request.files:
-        folders = request.files.getlist('folder[]')
-        for file in folders:
-            if file.filename:
-                # Caminho relativo mantido pelo atributo webkitdirectory
-                relative_path = file.filename
-                full_path = os.path.join(destination_path, relative_path)
-                os.makedirs(os.path.dirname(full_path), exist_ok=True)
-                file.save(full_path)
+    for f in request.files.getlist('files[]'):
+        if f.filename:
+            target = dest / f.filename
+            target.write_bytes(f.read())
+
+    for f in request.files.getlist('folder[]'):
+        if f.filename:
+            target = dest / f.filename
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(f.read())
 
     return redirect(url_for('index'))
 
+@app.route('/download')
+def download():
+    # 1. Pega o path relativo
+    rel = request.args.get('path', '').strip().lstrip('/')
+    if rel in ('', '.', '/'):
+        return jsonify({'error': 'Nenhum arquivo ou pasta especificado'}), 400
+
+    full_path = (BASE_DIRECTORY / rel).resolve()
+    # Validação de confinamento
+    try:
+        full_path.relative_to(BASE_DIRECTORY)
+    except ValueError:
+        return jsonify({'error': 'Acesso negado'}), 403
+
+    if not full_path.exists():
+        return jsonify({'error': 'Não encontrado'}), 404
+
+    # 2. Se for arquivo, baixa direto
+    if full_path.is_file():
+        return send_from_directory(
+            directory=str(full_path.parent),
+            path=full_path.name,
+            as_attachment=True
+        )
+
+    # 3. Se for diretório, cria ZIP na memória
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+        # caminhando pela árvore
+        for root, _, files in os.walk(full_path):
+            for filename in files:
+                absfname = os.path.join(root, filename)
+                # armazena dentro do zip mantendo a estrutura
+                arcname = os.path.relpath(absfname, full_path.parent)
+                zf.write(absfname, arcname)
+    buffer.seek(0)
+
+    zip_name = f"{full_path.name}.zip"
+    return send_file(
+        buffer,
+        mimetype='application/zip',
+        download_name=zip_name,
+        as_attachment=True
+    )
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

@@ -131,6 +131,10 @@ h1 {
     border: 2px solid var(--tertiary-color);
     cursor: pointer;
     transition: all .2s ease-in-out;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .list ul li:hover {
@@ -138,6 +142,10 @@ h1 {
     background: var(--tertiary-color);
     color: var(--tertiary-font-color);
     box-shadow: var(--shadow);
+}
+
+.list ul li:hover > button{
+    background-color: var(--primary-color);
 }
 
 .list ul li:active {
@@ -158,39 +166,43 @@ b {
     opacity: 50%;
 }
 
-/* Estilo para navegadores baseados em WebKit */
+.list ul li a{
+    border: 1px solid blue;
+}
+
+.download-button {
+    width: 90px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: none;
+    background-color: var(--tertiary-color);
+    color: var(--primary-color);
+}
+
 ::-webkit-scrollbar {
     width: 1px;
-    /* Largura da scrollbar */
     height: 8px;
-    /* Altura da scrollbar (para scroll horizontal) */
 }
 
 ::-webkit-scrollbar-track {
     background: #f0f0f0;
-    /* Cor do fundo da scrollbar */
     border-radius: 4px;
-    /* Bordas arredondadas */
 }
 
 ::-webkit-scrollbar-thumb {
     background: #cccccc;
-    /* Cor do "polegar" (barra de rolagem) */
     border-radius: 4px;
-    /* Bordas arredondadas */
     border: 1px solid #f0f0f0;
-    /* Espaço entre o polegar e o fundo */
 }
 
 ::-webkit-scrollbar-thumb:hover {
     background: #b3b3b3;
-    /* Cor ao passar o mouse */
 }
 
-/* Para navegadores compatíveis com scrollbar-color */
 * {
     scrollbar-width: thin;
-    /* Scrollbar fina */
     scrollbar-color: var(--tertiary-color) #7ca7f23a;
-    /* Polegar e trilha */
 }

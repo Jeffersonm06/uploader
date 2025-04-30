@@ -64,25 +64,56 @@
                 backOption.onclick = () => loadDirectory(data.parent_path);
                 explorer.appendChild(backOption);
             }
-
+            // Mostrar diretórios
             data.directories.forEach(dir => {
-                const item = document.createElement('li');
-                item.innerHTML = `
-                    <i class="bi bi-folder-fill"></i>
-                    <span>${dir}</span>`;
-                item.onclick = () => loadDirectory(`${data.current_path.replace(/\/$/, '')}/${dir}`);
-                explorer.appendChild(item);
+                const li = document.createElement('li');
+
+                // Link de navegação
+                const nav = document.createElement('span');
+                nav.innerHTML = `<i class="bi bi-folder-fill"></i> ${dir}`;
+                nav.onclick = () => loadDirectory(`${data.current_path}/${dir}`);
+                nav.style.cursor = 'pointer';
+
+                // Link de download (diretório)
+                const dl = document.createElement('a');
+                dl.href = `/download?path=${encodeURIComponent(
+                    data.current_path ? `${data.current_path}/${dir}` : dir
+                )}`;
+                dl.innerHTML = `
+                <button class="download-button">
+                    <i class="bi bi-download"></i>
+                </button>`;
+                dl.title = `Baixar pasta "${dir}"`;
+                dl.style.marginLeft = '8px';
+
+                li.append(nav, dl);
+                explorer.appendChild(li);
             });
 
-
+            // Mostrar arquivos
             data.files.forEach(file => {
-                const item = document.createElement('li');
-                item.innerHTML = `
-                <i class="bi bi-file-earmark-text"></i>
-                <span>${file}</span>
-                `;
-                explorer.appendChild(item);
+                const li = document.createElement('li');
+
+                // Apenas texto ou link do nome do arquivo
+                const span = document.createElement('span');
+                span.innerHTML = `<i class="bi bi-file-earmark"></i> ${file}`;
+
+                // Link de download (arquivo)
+                const dl = document.createElement('a');
+                dl.href = `/download?path=${encodeURIComponent(
+                    data.current_path ? `${data.current_path}/${file}` : file
+                )}`;
+                dl.innerHTML = `
+                <button class="download-button">
+                    <i class="bi bi-download"></i>
+                </button>`;
+                dl.title = `Baixar arquivo "${file}"`;
+                dl.style.marginLeft = '8px';
+
+                li.append(span, dl);
+                explorer.appendChild(li);
             });
+
         }
 
         // Carregar o diretório inicial
