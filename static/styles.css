@@ -166,10 +166,6 @@ b {
     opacity: 50%;
 }
 
-.list ul li a{
-    border: 1px solid blue;
-}
-
 .download-button {
     width: 90px;
     height: 30px;
@@ -180,6 +176,62 @@ b {
     border: none;
     background-color: var(--tertiary-color);
     color: var(--primary-color);
+}
+
+@media(max-width:640px){
+    * {
+        font-size: 16px;
+    }
+    
+    body {
+        font-family: Arial, sans-serif;
+        background: #bdbce9;
+        background: var(--back-gradient);
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        flex-direction: column;
+    }
+    
+    .container {
+        padding: 5px;
+    }
+    
+    form {
+        background: var(--secondary-color);
+        border-radius: 10px;
+        padding: 10px;
+        width: 100%;
+        height: auto;
+    }
+    
+    h1 {
+        font-size: 20px;
+        margin: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .list {
+        width: 100%;
+        height: auto;
+        padding: 10px;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+        
+    .list ul {
+        height: calc(55vh - 100px);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .download-button {
+        width: 60px;
+    }
 }
 
 ::-webkit-scrollbar {
