@@ -12,10 +12,8 @@
     <div class="container">
         <form action="/upload" method="post" enctype="multipart/form-data">
             <h1>Enviar Arquivos</h1>
-            <!-- Caminho atual para upload -->
             <input type="hidden" name="current_path" id="current-path-input" value="/">
 
-            <!-- Campo para selecionar arquivos -->
             <label for="files">Selecione arquivos:</label>
             <input type="file" multiple name="files[]" id="files">
             <br><br>
@@ -24,7 +22,6 @@
             <input type="file" name="folder[]" webkitdirectory multiple>
             <br><br>
 
-            <!-- Botão para enviar -->
             <button type="submit">Enviar</button>
         </form>
     </div>
@@ -94,7 +91,6 @@
             data.files.forEach(file => {
                 const li = document.createElement('li');
 
-                // Apenas texto ou link do nome do arquivo
                 const span = document.createElement('span');
                 span.innerHTML = `<i class="bi bi-file-earmark"></i> ${file}`;
 
