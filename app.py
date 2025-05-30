@@ -76,13 +76,11 @@ def upload():
 
 @app.route('/download')
 def download():
-    # 1. Pega o path relativo
     rel = request.args.get('path', '').strip().lstrip('/')
     if rel in ('', '.', '/'):
         return jsonify({'error': 'Nenhum arquivo ou pasta especificado'}), 400
 
     full_path = (BASE_DIRECTORY / rel).resolve()
-    # Validação de confinamento
     try:
         full_path.relative_to(BASE_DIRECTORY)
     except ValueError:
@@ -91,7 +89,6 @@ def download():
     if not full_path.exists():
         return jsonify({'error': 'Não encontrado'}), 404
 
-    # 2. Se for arquivo, baixa direto
     if full_path.is_file():
         return send_from_directory(
             directory=str(full_path.parent),
@@ -99,14 +96,11 @@ def download():
             as_attachment=True
         )
 
-    # 3. Se for diretório, cria ZIP na memória
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-        # caminhando pela árvore
         for root, _, files in os.walk(full_path):
             for filename in files:
                 absfname = os.path.join(root, filename)
-                # armazena dentro do zip mantendo a estrutura
                 arcname = os.path.relpath(absfname, full_path.parent)
                 zf.write(absfname, arcname)
     buffer.seek(0)
